@@ -57,5 +57,39 @@ class TestGeneratePasswordFunction(unittest.TestCase):
         output = self.capturedOutput.getvalue().strip()
         self.assertIn("Invalid input. Password length must be between 15 and 30.", output)
 
+    @patch('builtins.input', side_effect=['15', 'n', 'n'])  # Min length, alphabetic characters only
+    def test_min_length_alphabetic_only(self, mock_input):
+        generate_password()
+        output = self.capturedOutput.getvalue().strip()
+        password = output.split("Generated Password:")[-1].strip()
+        self.assertEqual(len(password), 15)
+        self.assertTrue(all(char.isalpha() for char in password), "Password should contain alphabetic characters only.")
+
+    @patch('builtins.input', side_effect=['30', 'y', 'y'])  # Max length, include digits and special chars
+    def test_max_length_including_digits_and_special_chars(self, mock_input):
+        generate_password()
+        output = self.capturedOutput.getvalue().strip()
+        password = output.split("Generated Password:")[-1].strip()
+        self.assertEqual(len(password), 30)
+        self.assertTrue(any(char.isdigit() for char in password) and any(char in string.punctuation for char in password), "Password should include digits and special characters.")
+
+    @patch('builtins.input', side_effect=['', '15', 'n', 'n'])  # Empty input, then valid length
+    def test_empty_input_then_valid_length(self, mock_input):
+        generate_password()
+        output = self.capturedOutput.getvalue().strip()
+        self.assertNotIn("Invalid input. Password length must be between 15 and 30.", output, "Empty input should be handled gracefully.")
+
+    @patch('builtins.input', side_effect=['-1', '15', 'n', 'n'])  # Negative length input, then valid length
+    def test_negative_length_input(self, mock_input):
+        generate_password()
+        output = self.capturedOutput.getvalue().strip()
+        self.assertIn("Invalid input. Password length must be between 15 and 30.", output, "Negative input should be considered invalid.")
+
+    @patch('builtins.input', side_effect=['100', '15', 'n', 'n'])  # Large length input, then valid length
+    def test_extremely_large_length_input(self, mock_input):
+        generate_password()
+        output = self.capturedOutput.getvalue().strip()
+        self.assertIn("Invalid input. Password length must be between 15 and 30.", output, "Extremely large input should be considered invalid.")
+
 if __name__ == '__main__':
     unittest.main()
